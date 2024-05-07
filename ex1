@@ -1,0 +1,29 @@
+class DataFrame:
+def __init__(self,dataset,kinddata):
+self.dataset = dataset
+self.kinddata = kinddata
+
+
+
+
+#第一回分の課題
+def createfile(filename):#ファイルの作成
+return 0
+def fileearch ():#ファイルの検索
+return 0
+
+
+def filedelete():#ファイルの削除
+return 0
+def update():#ファイルのアップデート
+return 0
+"""
+#第2回分の課題
+def wordsearch ():
+
+
+def view():
+
+
+def colorize():
+def save():"""
