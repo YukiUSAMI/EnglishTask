@@ -44,13 +44,33 @@ class SimpleDatabase:
             content = file.read()
         self.insert_file(original_name, updated_name, content)
 
+    def run(self):
+        while True:
+            print("1: ファイルをアップロード")
+            print("2: ファイルを表示")
+            print("3: ファイル名を更新")
+            print("4: ファイルを削除")
+            print("0: 終了")
+            choice = input("選択してください: ")
+            if choice == '1':
+                self.upload_file()
+            elif choice == '2':
+                files = self.get_files()
+                for file in files:
+                    print(file)
+            elif choice == '3':
+                file_id = int(input("更新するファイルのIDを入力してください: "))
+                updated_name = input("新しいファイル名を入力してください: ")
+                self.update_file(file_id, updated_name)
+            elif choice == '4':
+                file_id = int(input("削除するファイルのIDを入力してください: "))
+                self.delete_file(file_id)
+            elif choice == '0':
+                self.close()
+                break
+            else:
+                print("無効な選択です。もう一度お試しください。")
+
 # テスト
 db = SimpleDatabase('files.db')
-db.upload_file()
-files = db.get_files()
-for file in files:
-    print(file)
-db.update_file(1, 'Q1_updated')
-db.delete_file(2)
-db.close()
-
+db.run()
