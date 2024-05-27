@@ -72,5 +72,6 @@ class SimpleDatabase:
                 print("無効な選択です。もう一度お試しください。")
 
 # テスト
+
 db = SimpleDatabase('files.db')
 db.run()
