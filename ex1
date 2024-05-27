@@ -23,6 +23,8 @@ class SimpleDatabase:
         self.cursor.execute('SELECT * FROM files')
         return self.cursor.fetchall()
 
+#serch 関数を作成する
+
     def update_file(self, file_id, updated_name):
         self.cursor.execute('UPDATE files SET updated_name = ? WHERE id = ?', (updated_name, file_id))
         self.conn.commit()
