@@ -1,8 +1,9 @@
+import os
 import sqlite3
 from datetime import datetime
+from tkinter import Tk
+from tkinter.filedialog import askopenfilename
 
-
-#一部chatGPT に修正してもらっています。
 class SimpleDatabase:
     def __init__(self, db_name):
         self.db_name = db_name
@@ -23,8 +24,6 @@ class SimpleDatabase:
         self.cursor.execute('SELECT * FROM files')
         return self.cursor.fetchall()
 
-#serch 関数を作成する
-
     def update_file(self, file_id, updated_name):
         self.cursor.execute('UPDATE files SET updated_name = ? WHERE id = ?', (updated_name, file_id))
         self.conn.commit()
@@ -36,13 +35,42 @@ class SimpleDatabase:
     def close(self):
         self.conn.close()
 
+    def upload_file(self):
+        Tk().withdraw()
+        filename = askopenfilename() 
+        original_name = os.path.basename(filename)
+        updated_name = input("新しいファイル名を入力してください: ")
+        with open(filename, 'r') as file:
+            content = file.read()
+        self.insert_file(original_name, updated_name, content)
+
+    def run(self):
+        while True:
+            print("1: ファイルをアップロード")
+            print("2: ファイルを表示")
+            print("3: ファイル名を更新")
+            print("4: ファイルを削除")
+            print("0: 終了")
+            choice = input("選択してください: ")
+            if choice == '1':
+                self.upload_file()
+            elif choice == '2':
+                files = self.get_files()
+                for file in files:
+                    print(file)
+            elif choice == '3':
+                file_id = int(input("更新するファイルのIDを入力してください: "))
+                updated_name = input("新しいファイル名を入力してください: ")
+                self.update_file(file_id, updated_name)
+            elif choice == '4':
+                file_id = int(input("削除するファイルのIDを入力してください: "))
+                self.delete_file(file_id)
+            elif choice == '0':
+                self.close()
+                break
+            else:
+                print("無効な選択です。もう一度お試しください。")
+
 # テスト
 db = SimpleDatabase('files.db')
-db.insert_file('file1.txt', 'Q1', 'file1 content')
-db.insert_file('file2.txt', 'K1', 'file2 content')
-files = db.get_files()
-for file in files:
-    print(file)
-db.update_file(1, 'Q1_updated')
-db.delete_file(2)
-db.close()
+db.run()
