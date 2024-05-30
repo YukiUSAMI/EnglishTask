@@ -25,6 +25,8 @@ class SimpleDatabase:
         try:
             self.cursor.execute('''CREATE TABLE IF NOT EXISTS files
                                 (id INTEGER PRIMARY KEY AUTOINCREMENT, original_name TEXT, updated_name TEXT, content TEXT)''')
+            self.cursor.execute('''CREATE TABLE IF NOT EXISTS search_results
+                                (id INTEGER PRIMARY KEY AUTOINCREMENT, original_name TEXT, updated_name TEXT, context TEXT, search_term TEXT, search_time TEXT)''')
             self.conn.commit()
         except sqlite3.Error as e:
             print(f"テーブル作成エラー: {e}")
@@ -36,12 +38,28 @@ class SimpleDatabase:
         except sqlite3.Error as e:
             print(f"データ挿入エラー: {e}")
 
+    def insert_search_result(self, original_name, updated_name, context, search_term):
+        try:
+            search_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            self.cursor.execute('INSERT INTO search_results (original_name, updated_name, context, search_term, search_time) VALUES (?, ?, ?, ?, ?)', (original_name, updated_name, context, search_term, search_time))
+            self.conn.commit()
+        except sqlite3.Error as e:
+            print(f"検索結果挿入エラー: {e}")
+
     def get_files(self):
         try:
             self.cursor.execute('SELECT * FROM files')
             return self.cursor.fetchall()
         except sqlite3.Error as e:
             print(f"データ取得エラー: {e}")
+            return []
+
+    def get_search_results(self):
+        try:
+            self.cursor.execute('SELECT * FROM search_results')
+            return self.cursor.fetchall()
+        except sqlite3.Error as e:
+            print(f"検索結果取得エラー: {e}")
             return []
 
     def update_file(self, file_id, updated_name):
@@ -157,16 +175,52 @@ class SimpleDatabase:
                     if term == word:
                         start = max(0, i - 5)
                         end = min(len(tokens), i + 6)
-                        context = ' '.join(tokens[start:end]).replace(term, f'\033[91m{term}\033[0m')
+                        context = ' '.join(tokens[start:end]).replace(term, f'<mark>{term}</mark>')
                         results.append((file[1], file[2], context))
+            elif search_type == 'lemma':
+                lemmatizer = WordNetLemmatizer()
+                words = nltk.word_tokenize(content)
+                lemmas = [lemmatizer.lemmatize(word) for word in words]
+                for i, lemma in enumerate(lemmas):
+                    if term == lemma:
+                        start = max(0, i - 5)
+                        end = min(len(lemmas), i + 6)
+                        context = ' '.join(lemmas[start:end]).replace(term, f'<mark>{term}</mark>')
+                        results.append((file[1], file[2], context))
+            elif search_type == 'pos':
+                tokens = nltk.word_tokenize(content)
+                pos_tags = nltk.pos_tag(tokens)
+                pos_terms = [tag[1] for tag in pos_tags]
+                for i, pos in enumerate(pos_terms):
+                    if term == pos:
+                        start = max(0, i - 5)
+                        end = min(len(pos_tags), i + 6)
+                        context = ' '.join([tag[0] for tag in pos_tags[start:end]]).replace(term, f'<mark>{term}</mark>')
+                        results.append((file[1], file[2], context))
+            elif search_type == 'n-gram':
+                n = int(input("n-gramのサイズを入力してください: "))
+                tokens = nltk.word_tokenize(content)
+                ngrams = list(nltk.ngrams(tokens, n))
+                ngram_terms = [' '.join(gram) for gram in ngrams]
+                for i, ngram in enumerate(ngram_terms):
+                    if term == ngram:
+                        start = max(0, i - 5)
+                        end = min(len(ngrams), i + 6)
+                        context = ' '.join([' '.join(gram) for gram in ngrams[start:end]]).replace(term, f'<mark>{term}</mark>')
+                        results.append((file[1], file[2], context))
+            elif search_type == 'regex':
+                pattern = re.compile(term)
+                for match in pattern.finditer(content):
+                    start = max(0, match.start() - 50)
+                    end = min(len(content), match.end() + 50)
+                    context = content[start:end].replace(term, f'<mark>{term}</mark>')
+                    results.append((file[1], file[2], context))
         # 検索結果を保存するかどうかを尋ねる
         save_results = input("検索結果を保存しますか? (y/n): ")
         if save_results.lower() == 'y':
-            filename = f"Case{datetime.now().strftime('%Y%m%d-%H%M%S')}-search-{term}.txt"
-            with open(filename, 'w', encoding='utf-8') as file:
-                for result in results:
-                    file.write(f"Original Name: {result[0]}, Updated Name: {result[1]}, Context: {result[2]}\n")
-            print(f"検索結果が保存されました: {filename}")
+            for result in results:
+                self.insert_search_result(result[0], result[1], result[2], term)
+            print(f"検索結果がデータベースに保存されました。")
         return results
 
     def run(self):
@@ -176,6 +230,7 @@ class SimpleDatabase:
             print("3: ファイル名を更新")
             print("4: ファイルを削除")
             print("5: ファイルを検索")
+            print("6: 検索結果を表示")
             print("0: 終了")
             choice = input("選択してください: ")
             if choice == '1':
@@ -211,6 +266,13 @@ class SimpleDatabase:
                 if results:
                     for result in results:
                         print(f"Original Name: {result[0]}, Updated Name: {result[1]}, Context: {result[2]}")
+                else:
+                    print("検索結果が見つかりません。")
+            elif choice == '6':
+                search_results = self.get_search_results()
+                if search_results:
+                    for result in search_results:
+                        print(f"Original Name: {result[1]}, Updated Name: {result[2]}, Context: {result[3]}, Search Term: {result[4]}, Search Time: {result[5]}")
                 else:
                     print("検索結果が見つかりません。")
             elif choice == '0':
