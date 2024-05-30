@@ -1,13 +1,15 @@
 """
 We did the basic baseline and error handling ourselves. The code modifications were done by chatGPT.
 Implementation of word token, lemma, POS, n-gram or regex was done by chatGPT.
+GPT corrected the comments on arguments, etc.
 All error handling: s1300215
 level1-1 s1300237 and s1300215
 level1-2 s1300215 and s1300237
 The first one written first has the larger contribution.
 
 Some of the “run()” functions were written by chatGPT.
-level2 and later are written by chatGPT.
+(We plan to have chatGPT write the functions from level2 onward.)
+
 
 
 Translated with DeepL.com (free version)
@@ -38,6 +40,7 @@ class SimpleDatabase:
 
     def create_table(self):
         try:
+            #LLM
             self.cursor.execute('''CREATE TABLE IF NOT EXISTS files
                                 (id INTEGER PRIMARY KEY AUTOINCREMENT, original_name TEXT, updated_name TEXT, content TEXT)''')
             self.cursor.execute('''CREATE TABLE IF NOT EXISTS search_results
