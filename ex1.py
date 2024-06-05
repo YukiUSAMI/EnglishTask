@@ -14,7 +14,6 @@ Some of the “run()” functions were written by chatGPT.
 
 Translated with DeepL.com (free version)
 """
-
 import os
 import re
 import sqlite3
@@ -40,7 +39,6 @@ class SimpleDatabase:
 
     def create_table(self):
         try:
-            #LLM
             self.cursor.execute('''CREATE TABLE IF NOT EXISTS files
                                 (id INTEGER PRIMARY KEY AUTOINCREMENT, original_name TEXT, updated_name TEXT, content TEXT)''')
             self.cursor.execute('''CREATE TABLE IF NOT EXISTS search_results
@@ -181,6 +179,11 @@ class SimpleDatabase:
             print("無効な検索タイプです。デフォルトで単語トークン検索を実行します。")
             return 'word_token'
 
+    def highlight_text(self, text, term):
+        start_tag = "\033[1;31m"  # 赤色
+        end_tag = "\033[0m"       # 色リセット
+        return text.replace(f"<mark>{term}</mark>", f"{start_tag}{term}{end_tag}")
+
     def search_files(self, term):
         search_type = self.select_search_type()
         files = self.get_files()
@@ -233,12 +236,17 @@ class SimpleDatabase:
                     end = min(len(content), match.end() + 50)
                     context = content[start:end].replace(term, f'<mark>{term}</mark>')
                     results.append((file[1], file[2], context))
-        # 検索結果を保存するかどうかを尋ねる
+        
         save_results = input("検索結果を保存しますか? (y/n): ")
         if save_results.lower() == 'y':
             for result in results:
                 self.insert_search_result(result[0], result[1], result[2], term)
             print(f"検索結果がデータベースに保存されました。")
+        
+        for result in results:
+            highlighted_context = self.highlight_text(result[2], term)
+            print(f"Original Name: {result[0]}, Updated Name: {result[1]}, Context: {highlighted_context}")
+        
         return results
 
     def run(self):
@@ -283,14 +291,16 @@ class SimpleDatabase:
                 results = self.search_files(term)
                 if results:
                     for result in results:
-                        print(f"Original Name: {result[0]}, Updated Name: {result[1]}, Context: {result[2]}")
+                        highlighted_context = self.highlight_text(result[2], term)
+                        print(f"Original Name: {result[0]}, Updated Name: {result[1]}, Context: {highlighted_context}")
                 else:
                     print("検索結果が見つかりません。")
             elif choice == '6':
                 search_results = self.get_search_results()
                 if search_results:
                     for result in search_results:
-                        print(f"Original Name: {result[1]}, Updated Name: {result[2]}, Context: {result[3]}, Search Term: {result[4]}, Search Time: {result[5]}")
+                        highlighted_context = self.highlight_text(result[3], result[4])
+                        print(f"Original Name: {result[1]}, Updated Name: {result[2]}, Context: {highlighted_context}, Search Term: {result[4]}, Search Time: {result[5]}")
                 else:
                     print("検索結果が見つかりません。")
             elif choice == '0':
@@ -303,3 +313,4 @@ class SimpleDatabase:
 if __name__ == "__main__":
     db = SimpleDatabase('files.db')
     db.run()
+
